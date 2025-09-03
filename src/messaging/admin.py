@@ -4,7 +4,7 @@ import asyncio
 from aiogram import Router, Bot, F
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, FSInputFile
 from aiogram.filters import Command
-from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
+from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError, TelegramMigrateToChat
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 
@@ -54,6 +54,9 @@ async def chats_of_user_mentioned(user_id: int):
     for chat in db.get_all_monitored_chats():
         try:
             member = await bot.get_chat_member(chat.chat_id, user_id)
+        except TelegramMigrateToChat as error:
+            db.update_chat_id(chat, error.migrate_to_chat_id)
+            member = await bot.get_chat_member(error.migrate_to_chat_id, user_id)
         except (TelegramBadRequest, TelegramForbiddenError):
             continue
 
@@ -279,12 +282,7 @@ async def select_chat(message: Message, state: FSMContext):
         return
 
     chats = {}
-    for chat in db.get_all_monitored_chats():
-        try:
-            member = await bot.get_chat_member(chat.chat_id, admin_id)
-        except (TelegramBadRequest, TelegramForbiddenError):
-            continue
-
+    async for chat, member in chats_of_user_mentioned(admin_id):
         if member.status in ('creator', 'administrator'):
             chats[chat.chat_id] = chat
 

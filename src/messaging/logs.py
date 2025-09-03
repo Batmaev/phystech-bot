@@ -86,6 +86,14 @@ def new_link(monitored_link):
         bot.send_message(LOGS_CHAT_ID, text, parse_mode='HTML', disable_web_page_preview=True)
     )
 
+def chat_migrated(monitored_link, new_chat_id):
+    text = '🔄 #chat_migrated\n'
+    text += chat_link_html(monitored_link)
+    text += f'\n<code>{new_chat_id}</code>'
+    asyncio.create_task(
+        bot.send_message(LOGS_CHAT_ID, text, parse_mode='HTML', disable_web_page_preview=True)
+    )
+
 def new_code(user, email: str, code: str):
     text = '💌 #new_code\n'
     text += PrintableUser(user).html()

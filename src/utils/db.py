@@ -145,6 +145,13 @@ def save_link(link: str, chat_name: str, chat_id: int):
         session.commit()
         logs.new_link(monitored_link)
 
+def update_chat_id(old_link: MonitoredLink, new_chat_id: int):
+    with Session() as session:
+        monitored_link = session.query(MonitoredLink).filter(MonitoredLink.link == old_link.link).first()
+        monitored_link.chat_id = new_chat_id
+        session.commit()
+        logs.chat_migrated(monitored_link, new_chat_id)
+
 def get_link(link: str) -> MonitoredLink:
     with Session() as session:
         return session.query(MonitoredLink).filter(MonitoredLink.link == link).first()
