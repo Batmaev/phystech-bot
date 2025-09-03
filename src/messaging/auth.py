@@ -56,7 +56,7 @@ async def ask_for_email(update: CallbackQuery | Message, state: FSMContext):
 
     await message.answer(
         'Давай удостоверимся, что ты из МФТИ. '
-        'Hапиши свою почту на домене <code>@phystech.edu</code> или <code>@phystech.su</code>, '
+        'Hапиши свою почту на домене <code>@phystech.edu</code>, '
         'и мы вышлем на неё секретный код 😉 \n\n'
         'Если у тебя нет такой почты, '
         'то напиши <a href="https://t.me/sapereaude_hv">Капице</a>)',
