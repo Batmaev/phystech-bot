@@ -9,6 +9,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 
 import telethon
+from telethon.tl.types import User
 from telethon.errors.rpcerrorlist import UsernameInvalidError
 
 import pandas as pd
@@ -26,6 +27,9 @@ client = telethon.TelegramClient('session', API_ID, API_HASH)
 class NoUserSpecifiedError(Exception):
     pass
 
+class NotUserError(Exception):
+    pass
+
 
 async def find_user(message: Message) -> PrintableUser | Exception:
     for entity in message.entities:
@@ -34,6 +38,8 @@ async def find_user(message: Message) -> PrintableUser | Exception:
             try:
                 await client.start(bot_token=BOT_TOKEN)
                 user = await client.get_entity(username)
+                if not isinstance(user, User):
+                    return NotUserError()
                 return PrintableUser(user)
             except (UsernameInvalidError, ValueError) as error:
                 return error
@@ -70,6 +76,9 @@ async def list_user_chats(message: Message):
     user = await find_user(message)
     if isinstance(user, (UsernameInvalidError, ValueError)):
         await message.reply('Юзернейм никому не принадлежит')
+        return
+    if isinstance(user, NotUserError):
+        await message.reply('Никнейм принадлежит не человеку')
         return
     if isinstance(user, NoUserSpecifiedError):
         await message.reply(
@@ -168,6 +177,10 @@ async def check_status(message: Message):
 
     if isinstance(user, (UsernameInvalidError, ValueError)):
         await message.reply('Юзернейм никому не принадлежит')
+        return
+
+    if isinstance(user, NotUserError):
+        await message.reply('Никнейм принадлежит не человеку')
         return
 
     if isinstance(user, NoUserSpecifiedError):
