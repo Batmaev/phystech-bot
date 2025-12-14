@@ -6,4 +6,4 @@ services:
     command:
       python3 -m src.main
     restart:
-      always
+      unless-stopped
