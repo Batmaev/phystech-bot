@@ -75,7 +75,7 @@ async def switch_chats_and_services(query: CallbackQuery):
 
     try:
         await query.message.delete()
-    except TelegramAPIError:
+    except (TelegramAPIError, AttributeError):
         pass
 
     await query.message.answer(text, reply_markup=chat_and_services_buttons, parse_mode='HTML',
