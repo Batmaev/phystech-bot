@@ -154,7 +154,7 @@ def malicious_user(user, email: str):
     )
 
 def email_reuse(user, bot_users, email: str):
-    text = '🤔 #email_reuse\n'
+    text = '🤔 #email_reuse (prevented)\n'
     text += PrintableUser(user).html()
     text += f'\n<code>{email}</code>\n\n'
     text += 'User(s) with the same email:\n'

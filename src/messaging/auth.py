@@ -87,7 +87,11 @@ async def process_email(message: Message, state: FSMContext):
 
     if len(existing_users) > 1 or (len(existing_users) == 1 and
                                    existing_users[0].id != message.from_user.id):
+        await message.answer(
+            'Этот email уже используется. Если требуется иметь 2 аккаунта, то напиши <a href="https://t.me/sapereaude_hv">Капице</a>',
+            parse_mode='HTML', disable_web_page_preview=True)
         logs.email_reuse(message.from_user, existing_users, email)
+        return
 
     if any(user.status == db.UserStatus.BANNED for user in existing_users):
         await message.answer('Извините, но вы не можете авторизоваться.')
