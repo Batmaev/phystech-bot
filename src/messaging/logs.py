@@ -160,7 +160,7 @@ def email_reuse(user, bot_users, email: str):
     text += 'User(s) with the same email:\n'
     for bot_user in bot_users:
         text += f'- {PrintableUser(bot_user).html()} ({bot_user.status.name})\n'
-    text += '\n// ' + SUPPORT_CALL
+
     asyncio.create_task(
         bot.send_message(LOGS_CHAT_ID, text, parse_mode='HTML', disable_web_page_preview=True)
     )
