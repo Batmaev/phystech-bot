@@ -191,7 +191,7 @@ async def check_status(message: Message):
             '• или ответом на сообщение пользователя'
         )
         if message.chat.type != 'private': # delete instruction to avoid spam
-            await asyncio.sleep(300)
+            await asyncio.sleep(60)
             try:
                 await instruction.delete()
                 await message.delete()
