@@ -162,3 +162,35 @@ def get_all_monitored_chats() -> list[MonitoredLink]:
 
     chats_without_duplicates = {link.chat_id: link for link in links}
     return list(chats_without_duplicates.values())
+
+
+class BroadcastDelivery(Base):
+    __tablename__ = 'broadcast_deliveries'
+    broadcast_id = Column(Text, primary_key=True)
+    user_id = Column(Integer, primary_key=True)
+    delivered_at = Column(DateTime, server_default=func.now())  # pylint: disable=not-callable
+
+
+def was_broadcast_delivered(broadcast_id: str, user_id: int) -> bool:
+    with Session() as session:
+        return session.query(BroadcastDelivery).filter(
+            BroadcastDelivery.broadcast_id == broadcast_id,
+            BroadcastDelivery.user_id == user_id,
+        ).first() is not None
+
+
+def mark_broadcast_delivered(broadcast_id: str, user_id: int):
+    with Session() as session:
+        session.merge(BroadcastDelivery(broadcast_id=broadcast_id, user_id=user_id))
+        session.commit()
+
+
+def count_broadcast_deliveries(broadcast_id: str) -> int:
+    with Session() as session:
+        return session.query(BroadcastDelivery).filter(
+            BroadcastDelivery.broadcast_id == broadcast_id,
+        ).count()
+
+
+# create new tables if missing (idempotent)
+Base.metadata.create_all(engine, tables=[BroadcastDelivery.__table__])

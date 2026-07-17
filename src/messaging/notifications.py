@@ -3,18 +3,15 @@ import asyncio
 from aiogram import Bot
 from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
 
-import telethon
-
 from . import logs
 from ..utils import db, db_addons
-from ..utils.config import BOT_TOKEN, API_ID, API_HASH, SUPPORT_IDS
+from ..utils.config import BOT_TOKEN, SUPPORT_IDS
+from ..utils.telegram import client, ensure_client
 
 bot = Bot(BOT_TOKEN)
 
-client = telethon.TelegramClient('session', API_ID, API_HASH)
-
 async def notify_users_of(chat_id: int, text: str, limit: int = 100):
-    await client.start(bot_token=BOT_TOKEN)
+    await ensure_client()
 
     i = 0
     async for member in client.iter_participants(chat_id):
@@ -50,13 +47,8 @@ async def notify_users_of(chat_id: int, text: str, limit: int = 100):
 
         await asyncio.sleep(3.1)
 
-    await client.disconnect()
-
-
-
-
 async def make_threatening_post_at(chat_id: int, text: str, starter = '', joiner = '\u200B', ender = ''):
-    await client.start(bot_token=BOT_TOKEN)
+    await ensure_client()
     members = await client.get_participants(chat_id)
 
     not_authorized = [member for member in members if should_notify(member)]
@@ -67,8 +59,6 @@ async def make_threatening_post_at(chat_id: int, text: str, starter = '', joiner
     text = text + starter + ''.join(mentions) + ender
 
     msg = await bot.send_message(chat_id, text, parse_mode='HTML')
-
-    await client.disconnect()
 
     return msg, mentions
 

@@ -8,7 +8,6 @@ from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError, Teleg
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 
-import telethon
 from telethon.tl.types import User
 from telethon.errors.rpcerrorlist import UsernameInvalidError
 
@@ -17,12 +16,11 @@ import pandas as pd
 from . import logs
 from .logs import PrintableUser, UnaccessibleUser
 from ..utils import db
-from ..utils.config import BOT_TOKEN, ADMIN_FILTER, ADMIN_CHAT_ID, API_ID, API_HASH
+from ..utils.config import BOT_TOKEN, ADMIN_FILTER, ADMIN_CHAT_ID
+from ..utils.telegram import client, ensure_client
 
 router = Router()
 bot = Bot(BOT_TOKEN)
-
-client = telethon.TelegramClient('session', API_ID, API_HASH)
 
 class NoUserSpecifiedError(Exception):
     pass
@@ -36,7 +34,7 @@ async def find_user(message: Message) -> PrintableUser | Exception:
         if entity.type == 'mention':
             username = message.text[entity.offset + 1:entity.offset + entity.length]
             try:
-                await client.start(bot_token=BOT_TOKEN)
+                await ensure_client()
                 user = await client.get_entity(username)
                 if not isinstance(user, User):
                     return NotUserError()
@@ -240,7 +238,7 @@ async def list_strangers(message: Message):
 
     text = f'Неавторизованные в {monitored_link.chat_name}:\n'
 
-    await client.start(bot_token=BOT_TOKEN)
+    await ensure_client()
 
     i = 1
     I_MAX = 100
@@ -336,7 +334,7 @@ async def send_file_for_review(update: CallbackQuery, state: FSMContext):
         return
 
     strangers = []
-    await client.start(bot_token=BOT_TOKEN)
+    await ensure_client()
     async for member in client.iter_participants(chat_id):
         if member.bot:
             continue
