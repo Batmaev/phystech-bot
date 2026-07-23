@@ -64,7 +64,7 @@ async def chats_of_user_mentioned(user_id: int):
         except (TelegramBadRequest, TelegramForbiddenError):
             continue
 
-        if member.status.value != 'left':
+        if member.status != 'left':
             yield chat, member
 
 
@@ -98,7 +98,7 @@ async def list_user_chats(message: Message):
 
     text += 'Статус в чатах:\n'
     async for chat, member in chats_of_user_mentioned(user.id):
-        text += f'{chat.chat_name}: {member.status.value}\n'
+        text += f'{chat.chat_name}: {member.status}\n'
 
     await message.answer(text, parse_mode='HTML')
 
@@ -121,7 +121,7 @@ async def ban(message: Message):
 
     text = ''
     async for chat, member in chats_of_user_mentioned(user.id):
-        if member.status.value != 'kicked':
+        if member.status != 'kicked':
             try:
                 await bot.ban_chat_member(chat.chat_id, member.user.id)
                 text += f'{chat.chat_name}: забанили\n'
@@ -152,7 +152,7 @@ async def unban(message: Message):
 
     text = ''
     async for chat, member in chats_of_user_mentioned(user.id):
-        if member.status.value == 'kicked':
+        if member.status == 'kicked':
             try:
                 await bot.unban_chat_member(chat.chat_id, member.user.id, only_if_banned=True)
                 text += f'{chat.chat_name}: разбанили\n'
