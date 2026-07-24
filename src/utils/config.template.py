@@ -13,7 +13,6 @@ EMAIL = 'aaaaaaaaaaa@aaaaaa.aaa'
 EMAIL_PASSWORD = 'aaaaaaaaaaaaaaaa'
 
 LOGS_CHAT_ID = -1003333333333
-NOTIFICATIONS_LOGS_CHAT_ID = -1004444444444
 
 SUPPORT_CALL = '@........'
 
