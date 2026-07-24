@@ -1,6 +1,5 @@
 import time
 import smtplib
-import socket
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import random
@@ -17,7 +16,7 @@ def send_code(email: str) -> str | None:
             server, login_response = create_and_login_smtp_server()
             assert login_response == 235
             break
-        except (smtplib.SMTPServerDisconnected, AssertionError, socket.timeout) as error:
+        except (smtplib.SMTPServerDisconnected, AssertionError, TimeoutError) as error:
             logs.warn(f'Failed to login to SMTP server: {error}')
             time.sleep(5)
     else:
@@ -38,7 +37,7 @@ def send_code(email: str) -> str | None:
         try:
             server.send_message(msg)
             break
-        except (smtplib.SMTPServerDisconnected, socket.timeout) as error:
+        except (smtplib.SMTPServerDisconnected, TimeoutError) as error:
             logs.warn(f'Failed to send email: {error}')
             time.sleep(5)
     else:

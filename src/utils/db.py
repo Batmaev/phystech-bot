@@ -39,7 +39,7 @@ class BotUser(Base):
     utm_source_id = Column(Text, ForeignKey(MonitoredLink.link))
     utm_source = relationship(MonitoredLink)
     created_at = Column(DateTime, server_default=func.now()) # pylint: disable=not-callable
-    last_ad_time = Column(DateTime, default=datetime.datetime(1970, 1, 1))
+    last_ad_time = Column(DateTime, default=datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc))
 
 
 
@@ -133,7 +133,7 @@ def unban_user(user_id: int):
 def update_last_ad_time(user: User):
     with Session() as session:
         bot_user = session.query(BotUser).filter(BotUser.id == user.id).first()
-        bot_user.last_ad_time = datetime.datetime.now()
+        bot_user.last_ad_time = datetime.datetime.now(datetime.timezone.utc)
         session.commit()
 
 

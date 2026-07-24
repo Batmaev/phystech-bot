@@ -15,6 +15,7 @@ from aiogram.filters import Command, CommandObject
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.exceptions import (
+    TelegramAPIError,
     TelegramBadRequest,
     TelegramForbiddenError,
     TelegramRetryAfter,
@@ -165,7 +166,7 @@ async def _load_participants(session: BroadcastSession, chat_id: int):
                 continue
             users.append(member.id)
         session.participants[chat_id] = users
-    except Exception as error:
+    except Exception as error:  # noqa: BLE001 - telethon errors are heterogeneous; report any failure to the admin
         session.participants.pop(chat_id, None)
         session.participant_errors[chat_id] = str(error)
         title = session.chat_titles.get(chat_id) or '?'
@@ -323,7 +324,7 @@ async def start_broadcast(message: Message, command: CommandObject, state: FSMCo
 
     try:
         await _send_chat_lists(session)
-    except Exception as error:
+    except Exception as error:  # noqa: BLE001 - any setup failure must abort and clean up the session
         if _sessions.get(broadcast_id) is session:
             _sessions.pop(broadcast_id, None)
         await state.clear()
@@ -460,7 +461,7 @@ async def test_broadcast(update: CallbackQuery):
     try:
         await _copy_to_user(session.source_message, update.from_user.id)
         await update.answer('Отправили вам копию')
-    except Exception as error:
+    except (ValueError, TelegramAPIError) as error:
         await update.answer(f'Ошибка: {error}', show_alert=True)
 
 
@@ -537,26 +538,16 @@ async def start_sending(update: CallbackQuery, state: FSMContext):
             await asyncio.sleep(error.retry_after)
             try:
                 await _copy_to_user(session.source_message, user_id)
-            except Exception as retry_error:
+            except Exception as retry_error:  # noqa: BLE001 - keep broadcasting despite any failure; _classify_error buckets it as "other"
                 stats[_classify_error(retry_error)] += 1
                 await asyncio.sleep(SEND_INTERVAL)
                 continue
-        except Exception as error:
+        except Exception as error:  # noqa: BLE001 - keep broadcasting despite any failure; _classify_error buckets it as "other"
             stats[_classify_error(error)] += 1
             await asyncio.sleep(SEND_INTERVAL)
             continue
 
-        try:
-            db.mark_broadcast_delivered(broadcast_id, user_id)
-        except Exception as error:
-            await state.set_state(BroadcastStates.CONFIRMING)
-            await _refresh_confirm_message(session)
-            await update.message.answer(
-                'Рассылка остановлена: сообщение пользователю '
-                f'{user_id} отправлено, но результат не записался в БД:\n{error}\n\n'
-                'При повторном запуске этот пользователь может получить дубликат.'
-            )
-            return
+        db.mark_broadcast_delivered(broadcast_id, user_id)
 
         stats['success'] += 1
 

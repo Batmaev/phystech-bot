@@ -329,7 +329,7 @@ async def send_file_for_review(update: CallbackQuery, state: FSMContext):
 
     me = await bot.get_me()
     my_rights = await bot.get_chat_member(chat_id, me.id)
-    if not my_rights.status == 'administrator' and my_rights.can_restrict_members:
+    if not (my_rights.status == 'administrator' and my_rights.can_restrict_members):
         await update.message.answer('Разрешите боту банить пользователей и нажмите на кнопку еще раз')
         return
 

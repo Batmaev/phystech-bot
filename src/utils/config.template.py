@@ -1,3 +1,4 @@
+# noqa: N999
 from aiogram import F
 
 DATABASE_FILE = 'db.db'
