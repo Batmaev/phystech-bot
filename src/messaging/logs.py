@@ -129,6 +129,13 @@ def bot_kicked(chat: Chat, user):
         bot.send_message(LOGS_CHAT_ID, text, parse_mode='HTML', disable_web_page_preview=True)
     )
 
+def cant_talk_to_user(user):
+    text = '🤐 #bot_blocked\nby '
+    text += PrintableUser(user).html()
+    asyncio.create_task(
+        bot.send_message(LOGS_CHAT_ID, text, parse_mode='HTML', disable_web_page_preview=True)
+    )
+
 def manual_authorization(user, email: str | None):
     text = '🔐 #manual_authorization\n'
     text += PrintableUser(user).html()

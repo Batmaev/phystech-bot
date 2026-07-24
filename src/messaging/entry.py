@@ -90,7 +90,10 @@ async def accept_or_decline(request: ChatJoinRequest):
     if bot_user is None or bot_user.status != UserStatus.AUTHORIZED:
         save_user(request.from_user, monitored_link)
         await request.decline()
-        await talk_to_user(request, monitored_link)
+        try:
+            await talk_to_user(request, monitored_link)
+        except TelegramForbiddenError:
+            logs.cant_talk_to_user(request.from_user)
 
     else:
         await request.approve()
@@ -98,9 +101,8 @@ async def accept_or_decline(request: ChatJoinRequest):
         try:
             await congrats_user(request, monitored_link)
             await ad_after_join(request)
-        except TelegramForbiddenError as error:
-            user_text = logs.PrintableUser(request.from_user).html()
-            logs.warn(f'{user_text}\n{error}')
+        except TelegramForbiddenError:
+            logs.cant_talk_to_user(request.from_user)
 
 
 async def talk_to_user(request: ChatJoinRequest, monitored_link: MonitoredLink):
