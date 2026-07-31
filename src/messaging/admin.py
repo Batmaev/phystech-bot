@@ -54,8 +54,10 @@ async def find_user(message: Message) -> PrintableUser | Exception:
     return NoUserSpecifiedError()
 
 
-async def chats_of_user_mentioned(user_id: int):
+async def chats_of_user_mentioned(user_id: int, *, include_channels: bool = True):
     for chat in db.get_all_monitored_chats():
+        if not include_channels and chat.chat_type == 'channel':
+            continue
         try:
             member = await bot.get_chat_member(chat.chat_id, user_id)
         except TelegramMigrateToChat as error:
@@ -97,7 +99,7 @@ async def list_user_chats(message: Message):
         text = f'Пользователь {user.html()} не контактировал с ботом\n\n'
 
     text += 'Статус в чатах:\n'
-    async for chat, member in chats_of_user_mentioned(user.id):
+    async for chat, member in chats_of_user_mentioned(user.id, include_channels=False):
         text += f'{chat.chat_name}: {member.status}\n'
 
     await message.answer(text, parse_mode='HTML')
@@ -298,17 +300,21 @@ async def select_chat(message: Message, state: FSMContext):
             chats[chat.chat_id] = chat
 
     if not chats:
-        await message.reply('Нет чатов, где вы являетесь админом')
+        await message.reply('Нет чатов или каналов, где вы являетесь админом')
         return
 
     await message.answer(
-        'Выберите чат, из которого вы хотели бы удалить неавторизованных пользователей. '
+        'Выберите чат или канал, из которого вы хотели бы удалить неавторизованных пользователей. '
         'Бот пришлет файл со списком участников на проверку.',
         reply_markup=InlineKeyboardMarkup(
             inline_keyboard=[
                 [
                     InlineKeyboardButton(
-                        text=chat.chat_name,
+                        text=(
+                            f'{chat.chat_name} (канал)'
+                            if chat.chat_type == 'channel'
+                            else chat.chat_name
+                        ),
                         callback_data=f'clean {chat.chat_id} {chat.link}'
                     )
                 ]

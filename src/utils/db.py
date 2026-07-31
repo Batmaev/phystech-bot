@@ -20,6 +20,11 @@ class MonitoredLink(Base):
     link = Column(Text, primary_key=True)
     chat_name = Column(Text)
     chat_id = Column(Integer)
+    chat_type = Column(Text)  # 'group' / 'supergroup' / 'channel'
+
+    @property
+    def kind_ru(self) -> str:
+        return 'канал' if self.chat_type == 'channel' else 'чат'
 
 class UserStatus(enum.Enum):
     NOT_AUTHORIZED = enum.auto()
@@ -39,7 +44,7 @@ class BotUser(Base):
     utm_source_id = Column(Text, ForeignKey(MonitoredLink.link))
     utm_source = relationship(MonitoredLink)
     created_at = Column(DateTime, server_default=func.now()) # pylint: disable=not-callable
-    last_ad_time = Column(DateTime, default=datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc))
+    last_ad_time = Column(DateTime, default=datetime.datetime(1970, 1, 1))
 
 
 
@@ -133,14 +138,16 @@ def unban_user(user_id: int):
 def update_last_ad_time(user: User):
     with Session() as session:
         bot_user = session.query(BotUser).filter(BotUser.id == user.id).first()
-        bot_user.last_ad_time = datetime.datetime.now(datetime.timezone.utc)
+        bot_user.last_ad_time = datetime.datetime.now()
         session.commit()
 
 
-def save_link(link: str, chat_name: str, chat_id: int):
+def save_link(link: str, chat_name: str, chat_id: int, chat_type: str | None = None):
     with Session() as session:
         session.expire_on_commit = False
-        monitored_link = MonitoredLink(link=link, chat_name=chat_name, chat_id=chat_id)
+        monitored_link = MonitoredLink(
+            link=link, chat_name=chat_name, chat_id=chat_id, chat_type=chat_type
+        )
         session.add(monitored_link)
         session.commit()
         logs.new_link(monitored_link)
@@ -194,3 +201,13 @@ def count_broadcast_deliveries(broadcast_id: str) -> int:
 
 # create new tables if missing (idempotent)
 Base.metadata.create_all(engine, tables=[BroadcastDelivery.__table__])
+
+# add chat_type to monitored_links if missing; backfill existing rows as supergroup
+with engine.connect() as _conn:
+    cols = {row[1] for row in _conn.exec_driver_sql('PRAGMA table_info(monitored_links)')}
+    if 'chat_type' not in cols:
+        _conn.exec_driver_sql('ALTER TABLE monitored_links ADD COLUMN chat_type TEXT')
+    _conn.exec_driver_sql(
+        "UPDATE monitored_links SET chat_type = 'supergroup' WHERE chat_type IS NULL"
+    )
+    _conn.commit()

@@ -12,17 +12,40 @@ router = Router()
 bot = Bot(BOT_TOKEN)
 
 
+async def notify_adder(update: Message | ChatMemberUpdated, text: str):
+    """In channels the bot usually can't post, so DM the person who added it."""
+    if update.chat.type == 'channel':
+        try:
+            await bot.send_message(update.from_user.id, text)
+        except TelegramForbiddenError:
+            logs.cant_talk_to_user(update.from_user)
+        return
+    await update.answer(text)
+
+
 async def make_link(update: Message | ChatMemberUpdated):
     try:
         link = await bot.create_chat_invite_link(update.chat.id, creates_join_request=True)
     except TelegramBadRequest as error:
-        await update.answer(str(error))
+        await notify_adder(update, str(error))
         return
 
-    save_link(link.invite_link, update.chat.title, update.chat.id)
-    await update.answer(f'Создана защищенная ссылка с подтверждением: {link.invite_link}\n\n'
-                        'Бот будет автоматически принимать тех, кто подтвердил физтеховскую почту, '
-                        'и предлагать авторизоваться остальным.')
+    save_link(link.invite_link, update.chat.title, update.chat.id, update.chat.type)
+    title = update.chat.title or '?'
+    if update.chat.type == 'channel':
+        text = (
+            f'Создана защищенная ссылка с подтверждением для канала «{title}»: '
+            f'{link.invite_link}\n\n'
+            'Бот будет автоматически принимать тех, кто подтвердил физтеховскую почту, '
+            'и предлагать авторизоваться остальным.'
+        )
+    else:
+        text = (
+            f'Создана защищенная ссылка с подтверждением: {link.invite_link}\n\n'
+            'Бот будет автоматически принимать тех, кто подтвердил физтеховскую почту, '
+            'и предлагать авторизоваться остальным.'
+        )
+    await notify_adder(update, text)
 
 
 
@@ -54,18 +77,22 @@ async def process_my_chat_member(update: ChatMemberUpdated):
     was_ok = check_status(update.old_chat_member)
     is_ok = check_status(update.new_chat_member)
 
+    kind = 'канал' if update.chat.type == 'channel' else 'чат'
+
     if is_ok and not was_ok:
         await make_link(update)
 
     elif not is_ok and not was_ok:
-        await update.answer(
+        await notify_adder(
+            update,
             'Этот бот может создавать защищенные ссылки. '
             'Для этого нужно назначить его администратором и дать право приглашать пользователей.'
         )
 
     elif was_ok and not is_ok:
-        await update.answer(
-            'Бот больше не сможет принимать пользователей в этот чат. '
+        await notify_adder(
+            update,
+            f'Бот больше не сможет принимать пользователей в этот {kind}. '
             'Ему не хватает прав'
         )
 
@@ -83,7 +110,8 @@ async def accept_or_decline(request: ChatJoinRequest):
             monitored_link = MonitoredLink(
                 chat_name=request.chat.title,
                 chat_id=request.chat.id,
-                link=f'https://t.me/{request.chat.username}'
+                link=f'https://t.me/{request.chat.username}',
+                chat_type=request.chat.type,
             )
 
     bot_user = get_user(request.from_user)
@@ -108,7 +136,7 @@ async def accept_or_decline(request: ChatJoinRequest):
 async def talk_to_user(request: ChatJoinRequest, monitored_link: MonitoredLink):
     await request.answer_pm(
     f'Привет! Ты попытался вступить в {monitored_link.chat_name}.\n\n'
-    'Этот чат доступен только для физтехов. '
+    f'Этот {monitored_link.kind_ru} доступен только для физтехов. '
     'Авторизуйся в этом боте и попробуй вступить снова.\n\n'
     'Используй команду /start'
 )

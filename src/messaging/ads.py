@@ -23,7 +23,7 @@ async def welcome(message: Message, link_text: str):
         monitored_link = get_link(link_text)
         link_html = logs.chat_link_html(monitored_link)
         await message.answer(
-            'Теперь ты можешь вступить в чат ' + link_html,
+            f'Теперь ты можешь вступить в {monitored_link.kind_ru} ' + link_html,
             parse_mode='HTML',
         )
     else:
@@ -49,7 +49,7 @@ async def ad_after_auth(message: Message):
 async def ad_after_join(request: ChatJoinRequest):
     await asyncio.sleep(60)
     bot_user = get_user(request.from_user)
-    if (datetime.datetime.now(datetime.timezone.utc) - bot_user.last_ad_time) >= datetime.timedelta(days=1):
+    if (datetime.datetime.now() - bot_user.last_ad_time) >= datetime.timedelta(days=1):
         await request.answer_pm(
             'Хотите посмотреть, какие есть чаты/сервисы/блоги у физтехов?',
             reply_markup=chat_and_services_buttons
