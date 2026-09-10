@@ -35,7 +35,7 @@ def send_code(email: str) -> str | None:
 
     for _ in range(3):
         try:
-            server.send_message(msg)
+            server.send_message(msg, to_addrs=[email])
             break
         except (smtplib.SMTPServerDisconnected, TimeoutError) as error:
             logs.warn(f'Failed to send email: {error}')
