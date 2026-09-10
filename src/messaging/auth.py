@@ -1,3 +1,5 @@
+from email.utils import parseaddr
+
 from aiogram import Router, Bot, F
 from aiogram.types import Message, Chat, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, ChatMemberUpdated
 from aiogram.filters import CommandStart, Command, ChatMemberUpdatedFilter, JOIN_TRANSITION
@@ -77,7 +79,7 @@ async def process_email(message: Message, state: FSMContext):
         await message.answer('Почта не должна содержать символ "+"')
         return
 
-    if not email.endswith('@phystech.edu') and not email.endswith('@phystech.su'):
+    if parseaddr(email) != ('', email) or not email.endswith(('@phystech.edu', '@phystech.su')):
         await message.answer('Не могу разобрать, что-то на физтеховском. '
                              'Попробуйте ещё раз.')
         return
