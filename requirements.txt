@@ -1,4 +1,4 @@
-aiogram ~= 3.29.0
+aiogram ~= 3.31.0
 SQLAlchemy ~= 2.0.51
 telethon ~= 1.44.0
 pandas ~= 3.0.3
